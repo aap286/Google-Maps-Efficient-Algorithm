@@ -1,4 +1,4 @@
-import { GoogleMap, MarkerF, CircleF } from "@react-google-maps/api";
+import { GoogleMap, MarkerF, CircleF, PolylineF } from "@react-google-maps/api";
 import { useOnLoad } from "./googleMapsHooks";
 import {useState, useEffect, useRef} from "react";
 import _debounce from 'lodash/debounce';
@@ -11,7 +11,12 @@ const defaultZoom = 13; //
 const radius = 94 // in meters
 // Math.sqrt(300000 / Math.PI);
 
-const GoogleMapComponent = ({ addMarker, removeMarker, setRemoveMarker, drawPath, setDrawPath }) => {
+const GoogleMapComponent = ({ setIsMarkerAdded, addMarker, 
+    removeMarker, setRemoveMarker, 
+    drawPath,
+    isDelete, setIsDelete, 
+    setIsPathDrawn
+    }) => {
 
     const mapRef = useRef(null); // reference to map for this files
     const { isLoaded, onLoad, map, convertPixelToLatLng, pixelsToLatitude } = useOnLoad(); //  returing from hook
@@ -20,15 +25,17 @@ const GoogleMapComponent = ({ addMarker, removeMarker, setRemoveMarker, drawPath
     const [zoom, setZoom] = useState(defaultZoom);
     const [marker, setMarker] = useState(null); // pin added to map
     const [mapContainerSize, setMapContainerSize] = useState(null);
-    const [ pathRecorded, setPathRecorded] = useState([]);
-    const [ mousePressed, setMousePressed] = useState(false); // records when user clicks on
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [polylinePath, setPolylinePath] = useState([]);
+    const [distance, setDistance] = useState(0);
+
+
 
     // TODO: gets the width and height google maps box
     const getMapContainerSize = () => {
         if (mapRef.current?.mapRef) {
             const width = mapRef.current.mapRef.offsetWidth;
             const height = mapRef.current.mapRef.offsetHeight;
-            // console.log('Width:', width, 'Height:', height);
             setMapContainerSize({ width, height });
         }
     };
@@ -37,6 +44,17 @@ const GoogleMapComponent = ({ addMarker, removeMarker, setRemoveMarker, drawPath
     useEffect(() => {
         getMapContainerSize();
     }, [mapRef.current]);
+
+    // TODO: recenter map when zoomed in 
+    const handleZoomChanged = () => {
+        const map = mapRef.current;
+        
+        if (map && marker) {
+            const newCenter = {lat: marker.lat(), lng: marker.lng()};
+            setCenter(newCenter);
+         
+        }
+    };
 
     // TODO:  when mouse reaches the end of the map, move map accordingly
     const handleMouseMapMove = (e) => {
@@ -89,32 +107,48 @@ const GoogleMapComponent = ({ addMarker, removeMarker, setRemoveMarker, drawPath
 
     // TODO: record geographical coords value of cursor of the circle tag
     const handleMapDrawing = _debounce((e) => {
-
+        console.log('drawing mouse', isDrawing)
         // enables when draw path is clicked and center exists
-        if(drawPath && marker && mousePressed ) {
+        if (drawPath && marker && isDrawing) {
             drawingPathButton(e.latLng);
-        }
+        } 
+
+        if( !drawPath ) {
+            handleMouseUp();
+        };
+            
+    }, 5);
+
+    const handlePolylineDrawing = (point) => {
+
         
-    }, 10);
+        const newPoint = { lat: point.lat(), lng: point.lng() }
 
-    //  TODO: handles when mouse is pressed
-    const handleMapDown = () => {
-        setMousePressed(true);
-     };
+        setPolylinePath((prevPath) => [...prevPath, newPoint]);
 
-    //  TODO: handles when mouse is released
-    const handleMapMouseUp = () => {
-        setMousePressed(false);
-    }; 
- 
+        if (polylinePath.length > 0) {
+            const lastPoint = polylinePath[polylinePath.length - 1];
+            const distance = haversineDistance(lastPoint, newPoint);
+            setDistance( (prevDist) => prevDist + distance);  
+        }
+    };
+
+    const handleMouseDown = () => {
+        setIsDrawing(true);
+    };
+
+    const handleMouseUp = () => {
+        setIsDrawing(false);
+    };
+
 
     // * add a marker to the map
     const handleAddmarker = (e) => {
-        
         if(e.latLng && addMarker) {
-            console.log('Marker added at location:', e.latLng.lat(), e.latLng.lng());
+            // console.log('Marker added at location:', e.latLng.lat(), e.latLng.lng());
+            setIsMarkerAdded(true);
             setMarker(e.latLng);
-            setPathRecorded([]) // resets the recorded path
+            setPolylinePath([]) // resets the recorded path
 
         }
     }
@@ -124,15 +158,30 @@ const GoogleMapComponent = ({ addMarker, removeMarker, setRemoveMarker, drawPath
         if (removeMarker && marker) {
             setMarker(null);
             setRemoveMarker(false);
+            setIsMarkerAdded(false);
         }
     }, [removeMarker]);
     
     // * draws path on the map
     const drawingPathButton = (point) => {
 
-        setPathRecorded((prevPathRecorded) => [...prevPathRecorded, {lat: point.lat(), lng: point.lng()}]);
-        console.log('path recorded:', pathRecorded);
+        setIsMarkerAdded(true);
+        setIsPathDrawn(true);
+        handlePolylineDrawing(point);
+    
     };
+
+    // * removes drawn path from map
+    useEffect(() => { 
+
+        if(isDelete && polylinePath.length > 0){
+            // console.log("delete polyline");
+            setIsDelete(false);
+            setIsPathDrawn(false);
+            setPolylinePath([]);
+            setDistance(0);
+        }
+    }, [isDelete, polylinePath, distance, setIsPathDrawn]);
 
 
     if (!isLoaded) {
@@ -158,31 +207,42 @@ const GoogleMapComponent = ({ addMarker, removeMarker, setRemoveMarker, drawPath
             onClick={handleAddmarker}
             onMouseMove={handleMouseMapMove}
             onDragEnd={handleMapDragEnd}
-            onMouseUp={handleMapMouseUp}
-            onMouseDown={handleMapDown}
             onLoad={onLoad}
             ref = {mapRef}
+            onZoomChanged={handleZoomChanged}
         >
 
 
             {marker && (
                 <>
-                    <MarkerF position={marker} />
+                    
                     <CircleF
                         center={marker}
                         radius={radius}
-                        options={circleOptions}
+                        options={{
+                            ...circleOptions,
+                            clickable: drawPath, // Set clickable to false when drawPath is true
+                        }}
                         onMouseMove={handleMapDrawing}
+                        onMouseDown={handleMouseDown}
+                        onMouseUp={handleMouseUp}
                     />
+                    <MarkerF 
+                    position={marker}
+                    options = {{ opacity: drawPath ? 0.2: 1}}
+                     />
 
-                    {pathRecorded && pathRecorded.map((path, index) => (
-                        <CircleF
-                            key={index}
-                            center={path}
-                            options={pathOptions}
-                            radius={2}
+
+                    {polylinePath && (
+                        <PolylineF
+                            path={polylinePath}
+                            options={{
+                                strokeColor: 'green',
+                                strokeOpacity: 0.5,
+                                strokeWeight: 2,
+                            }}
                         />
-                    ))} 
+                    )}
                 </>
             )}
 
@@ -208,23 +268,33 @@ const circleOptions = {
 // style for the path
 const pathOptions = {
     fillColor : 'cyan',
-    // strokeColor: 'cyan',
+    strokeColor: 'cyan',
     fillOpacity: 1,
     strokeOpacity: 1,
-    // strokeWeight: 1,
+    strokeWeight: 0.01,
 
 };
 
 
-// converting meters into pixel
-function metersPerPixel(lat, zoom) {
+// distance between points
+function haversineDistance(coord1, coord2) {
+    const toRadians = (angle) => (angle * Math.PI) / 180;
 
-    const earthCircumference = 40075017;
-    const latitudeRadians = lat * (Math.PI / 180);
-    return earthCircumference * Math.cos(latitudeRadians) / Math.pow(2, zoom + 8);
+    const { lat: lat1, lng: lon1 } = coord1;
+    const { lat: lat2, lng: lon2 } = coord2;
+
+    const R = 6371; // Radius of the Earth in kilometers
+    
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const distance = R * c * 1000; // Distance in meters
+
+    return distance;
 }
-
-
-function metersToPixel(lat, zoom) { return radius / metersPerPixel(lat, zoom) * 2; }
-
-

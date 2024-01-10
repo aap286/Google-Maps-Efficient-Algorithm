@@ -146,24 +146,34 @@ function App() {
   const [addMarker,  setAddMarker] = useState(false);
   const [removeMarker, setRemoveMarker] = useState(false);
   const [drawPath, setDrawPath] = useState(false);
+  const [isMarkerAdded, setIsMarkerAdded] = useState(false);
+  const [isPathDrawn, setIsPathDrawn] = useState(false);
+  const [isDelete, setIsDelete] = useState(false);
+  const [drawStraight, setDrawStraight] = useState(false);
 
   // * add button 
   const addButton = () => {
-    console.log('add button clicked!');
     setAddMarker(!addMarker);
 
   };
 
   // * remove button
   const removeButton = () => {
-    console.log('remove button clicked!');
     setRemoveMarker(true);
+    setIsMarkerAdded(false);
   }
 
   // * draw path button
   const pathButton = () => {
-    console.log('draw path button clicked!');
+    setAddMarker(false);
     setDrawPath(!drawPath);
+  };
+
+
+  // * flag to delete path button
+  const deleteButton = () => {
+    console.log('clicked delete path button');
+    setIsDelete(true);
   };
  
   return (
@@ -174,37 +184,40 @@ function App() {
             
           <GoogleMapComponent
 
+            setIsMarkerAdded = {setIsMarkerAdded}
             addMarker = {addMarker}
             removeMarker= {removeMarker}
-            setRemoveMarker= {setRemoveMarker}
-            drawPath= {drawPath}
-            setDrawPath= {setDrawPath}
+            setRemoveMarker = {setRemoveMarker}
+            drawPath = {drawPath}
+            isDelete = {isDelete}
+            setIsDelete = {setIsDelete}
+            setIsPathDrawn= {setIsPathDrawn}
           />
 
         </div>
 
         <div className="map-buttons">
           <div className="map-btn">
-            <button  onClick = {addButton}>
+            <button onClick={addButton} disabled={drawPath} style={activeBtn(addMarker)}>
               Add Pin
 
             </button>
           </div>
 
           <div className="map-btn">
-            <button onClick={removeButton} >
+            <button onClick={removeButton} disabled = {!isMarkerAdded || drawPath} >
               Clear Marker
             </button>
           </div>
 
           <div className="map-btn">
-            <button onClick={pathButton} >
+            <button onClick={pathButton} disabled={!isMarkerAdded} style={activeBtn(drawPath)}>
               Draw Path
             </button>
           </div>
 
           <div className="map-btn">
-            <button >
+            <button onClick={deleteButton} disabled={!isMarkerAdded || !isPathDrawn}>
               Delete Path
             </button>
           </div>
@@ -233,3 +246,13 @@ export default App;
 
 // rounding number 
 function round(point) {return Math.round(point * 1000)/1000}
+
+// style active button
+function activeBtn(bool) {
+  return {
+    backgroundColor: bool ? '#FF0000' : '#4CAF50' ,
+    color: "#000000",
+    border: "1px solid #ccc"
+    // add other styles as needed
+  };
+}
