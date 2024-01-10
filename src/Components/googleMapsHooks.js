@@ -65,51 +65,9 @@ export function useOnLoad() {
     }
   };
     
-  return { isLoaded, onLoad, map, convertPixelToLatLng, pixelsToLatitude };
+  return { isLoaded, onLoad, map, pixelsToLatitude };
 };
 
-// const [googleMapConPars, setgoogleMapConPars] = useState(null);
-// remove marker if user searches place
-// const [removeMarkerSearch, setRemoveMarkerSearch] = useState(false);
-
-  // // recenter map after search
-  // const panMap = (map, point, searched) => {
-    
-  //   if(map){      
-  //     // data type is {lat: xx, lng: xx}
-  //     map.panTo(point);
-  //     setRemoveMarkerSearch(!removeMarkerSearch);
-  //   }
-      
-    
-  // }
-
-// // * pixel to map coordinates ratio
-// function pixelToMapRatio() {
-
-//   if (isLoaded && map) {
-//     var topRight = map.getProjection().fromLatLngToPoint(map.getBounds().getNorthEast());
-//     var bottomLeft = map.getProjection().fromLatLngToPoint(map.getBounds().getSouthWest());
-//     var scale = Math.pow(2, map.getZoom());
 
 
-//     setgoogleMapConPars({
-//       topRight: topRight,
-//       bottomLeft: bottomLeft,
-//       scale: scale
-//     })
-//   }
-// };
 
-
-// //  * converts pixels x,y to map coordinates
-// const convertPixelToLatLng = (pixelX, pixelY) => {
-//   if (map && googleMapConPars) {
-//     const x = (pixelX / googleMapConPars.scale) + googleMapConPars.bottomLeft.x;
-//     const y = (pixelY / googleMapConPars.scale) + googleMapConPars.bottomLeft.y;
-
-//     const LatLng = map.getProjection().fromPointToLatLng(new window.google.maps.Point(x, y));
-
-//     return { lat: LatLng.lat(), lng: LatLng.lng() };
-//   }
-// };

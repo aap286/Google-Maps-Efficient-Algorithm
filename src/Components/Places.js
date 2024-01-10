@@ -3,12 +3,12 @@ import PlacesAutocomplete, { geocodeByAddress, getLatLng } from 'react-places-au
 import { useOnLoad } from "./googleMapsHooks";
 
 
-const LocationSearchInput = ({ map, clearMarker }) => {
+const LocationSearchInput = ({  setSearchLocaiton }) => {
     const [address, setAddress] = useState('');
     const [selectedLocation, setSelectedLocation] = useState(null);
 
 
-    const { isLoaded, onLoad = null, maps = null, googleMapConPars = null, convertPixelToLatLng = null, pixelToMapRatio = null, panMap } = useOnLoad();
+    const { isLoaded } = useOnLoad();
 
     const handleSelect = async (selected) => {
         const results = await geocodeByAddress(selected);
@@ -27,10 +27,8 @@ const LocationSearchInput = ({ map, clearMarker }) => {
     const handlePrintButtonClick = () => {
         
         if (selectedLocation ) {
-            
-            panMap(map, selectedLocation)
-            clearMarker();
-            
+            setSearchLocaiton(selectedLocation)
+         
         } else {
             console.log('No location selected');
         }
@@ -42,20 +40,21 @@ const LocationSearchInput = ({ map, clearMarker }) => {
 
     return (
         <>
-            <PlacesAutocomplete
+            <PlacesAutocomplete 
+            
+                className="search-input"
                 value={address}
                 onChange={setAddress}
                 onSelect={handleSelect}
-                // options={options}
             >
                 {({ getInputProps, suggestions, getSuggestionItemProps, loading }) => (
-                    <div>
-                        <input {...getInputProps({ placeholder: 'Search Places' })} key="places-autocomplete-input" style={{ height: '100%', width: '70%' }} />
+                    <div className = 'input-suggestions-layout'>
+                        <input {...getInputProps({ placeholder: 'Search Places' })} key="places-autocomplete-input" className='input' />
 
-                        <div>
+                        <div style={{width: '100%', height:'100%'}}>
                             {loading && <div>Loading...</div>}
                             {suggestions.map((suggestion, index) => (
-                                <div {...getSuggestionItemProps(suggestion)} key={index}>
+                                <div  {...getSuggestionItemProps(suggestion)} key={index} style={{ backgroundColor: 'red', marginBottom:'2px'}}>
                                     {suggestion.description}
                                 </div>
                             ))}
@@ -66,7 +65,7 @@ const LocationSearchInput = ({ map, clearMarker }) => {
 
             <button 
                 onClick={handlePrintButtonClick}
-                style={{ height: '100%', width: '30%' }}
+                className='search-button'
             >
                     Print Name and LatLng
                 </button>

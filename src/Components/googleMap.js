@@ -1,4 +1,4 @@
-import { GoogleMap, MarkerF, CircleF, PolylineF } from "@react-google-maps/api";
+import { GoogleMap, MarkerF, CircleF, PolylineF, StandaloneSearchBox } from "@react-google-maps/api";
 import { useOnLoad } from "./googleMapsHooks";
 import {useState, useEffect, useRef} from "react";
 import _debounce from 'lodash/debounce';
@@ -11,15 +11,17 @@ const defaultZoom = 13; //
 const radius = 94 // in meters
 // Math.sqrt(300000 / Math.PI);
 
-const GoogleMapComponent = ({ setIsMarkerAdded, addMarker, 
+const GoogleMapComponent = ({ setMap,
+    setIsMarkerAdded, addMarker, 
     removeMarker, setRemoveMarker, 
     drawPath,
     isDelete, setIsDelete, 
-    setIsPathDrawn
+    setIsPathDrawn,
+    searchLocation
     }) => {
 
     const mapRef = useRef(null); // reference to map for this files
-    const { isLoaded, onLoad, map, convertPixelToLatLng, pixelsToLatitude } = useOnLoad(); //  returing from hook
+    const { isLoaded, onLoad, map, pixelsToLatitude } = useOnLoad(); //  returing from hook
 
     const [center, setCenter] = useState(defaultLocation); 
     const [zoom, setZoom] = useState(defaultZoom);
@@ -37,13 +39,20 @@ const GoogleMapComponent = ({ setIsMarkerAdded, addMarker,
             const width = mapRef.current.mapRef.offsetWidth;
             const height = mapRef.current.mapRef.offsetHeight;
             setMapContainerSize({ width, height });
+
+            setMap(map);
         }
     };
 
     // to run the function after the component is mounted
     useEffect(() => {
         getMapContainerSize();
-    }, [mapRef.current]);
+
+        if (searchLocation ){
+            setCenter(searchLocation);
+            setMarker(null);
+        }
+    }, [mapRef.current, setMap, searchLocation]);
 
     // TODO: recenter map when zoomed in 
     const handleZoomChanged = () => {
