@@ -15,6 +15,7 @@ function App() {
   const [isMarkerAdded, setIsMarkerAdded] = useState(false);
   const [isPathDrawn, setIsPathDrawn] = useState(false);
   const [isDelete, setIsDelete] = useState(false);
+  const [submit, isSubmit] = useState(false);
 
   const [searchLocation, setSearchLocaiton] = useState(null);
 
@@ -43,6 +44,11 @@ function App() {
     setIsDelete(true);
   };
  
+  // * submit button
+const submitButton = () => {
+  isSubmit(true);
+};
+
   return (
     <>
       <div className="search-bar-map">
@@ -66,6 +72,7 @@ function App() {
               setIsDelete={setIsDelete}
               setIsPathDrawn={setIsPathDrawn}
               searchLocation={searchLocation}
+              submit = {submit}
             />
 
           </div>
@@ -97,7 +104,7 @@ function App() {
             </div>
 
             <div className="map-btn">
-              <button  >
+              <button onClick={submitButton}>
                 Submit Path
               </button>
             </div>

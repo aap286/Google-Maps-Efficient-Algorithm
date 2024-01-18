@@ -3,6 +3,9 @@ import { useOnLoad } from "./googleMapsHooks";
 import {useState, useEffect, useRef} from "react";
 import _debounce from 'lodash/debounce';
 
+// import fetch from 'node-fetch';
+import axios from 'axios';
+
 
 const defaultLocation = { lat: 48.8584, lng: 2.2945 }; // location initially defined
 const defaultZoom = 13; // 
@@ -17,7 +20,8 @@ const GoogleMapComponent = ({ setMap,
     drawPath,
     isDelete, setIsDelete, 
     setIsPathDrawn,
-    searchLocation
+    searchLocation,
+    submit
     }) => {
 
     const mapRef = useRef(null); // reference to map for this files
@@ -65,6 +69,45 @@ const GoogleMapComponent = ({ setMap,
         }
     };
 
+    useEffect(() => {
+            if (submit && polylinePath.length > 0) {
+                console.log('submitted');
+
+                const ipAddress = 'http://172.31.145.56:8000/submit_path';
+                const dataToSend = { path: polylinePath };
+
+                console.log('data that is sent', dataToSend);
+
+                fetch(ipAddress, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({path : polylinePath})
+                })
+
+                // try {
+                //     const response = await axios.post(`http://${ipAddress}/submit_path`, dataToSend);
+
+                //     if (response.status === 200) {
+                //         console.log('Data successfully submitted');
+                //         // Handle success
+                //     } else {
+                //         console.error('Failed to submit data');
+                //         // Handle failure
+                //     }
+                // } catch (error) {
+                //     console.error('Error submitting data:', error);
+                //     // Handle error
+                // }
+            } else {
+                console.log('not submitted');
+            }
+    
+    }, [submit]);
+
+    
     // TODO:  when mouse reaches the end of the map, move map accordingly
     const handleMouseMapMove = (e) => {
 
@@ -140,6 +183,8 @@ const GoogleMapComponent = ({ setMap,
             const distance = haversineDistance(lastPoint, newPoint);
             setDistance( (prevDist) => prevDist + distance);  
         }
+
+    //    console.log(polylinePath);
     };
 
     const handleMouseDown = () => {
